@@ -1,4 +1,6 @@
 # Option-Data-Scraper
+Requires Python 3.x
+
 Scrapes option contract data from Yahoo Finance or Google Finance
 
 Folder "option_data" will be created. Inside, folders will be created
