@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="WARN" shutdownHook="disable">
+
+  <Appenders>
+    <RollingFile
+        name="file"
+        fileName="logs/optionsdata.log"
+        filePattern="logs/optionsdata.log-%d{yyyy-MM-dd}-%i"
+        immediateFlush="true"
+        append="true">
+
+      <PatternLayout pattern="%5p %d [%-10.10t] (%-20.20c:%4L) - %m%n" />
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <TimeBasedTriggeringPolicy interval="24" modulate="true" />
+        <SizeBasedTriggeringPolicy size="20 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+    <Console name="STDOUT" target="SYSTEM_OUT">
+      <PatternLayout pattern="%5p %d [%-10.10t] (%-20.20c:%4L) - %m%n" />
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="org.options" level="warn" additivity="false">
+      <AppenderRef ref="STDOUT"/>
+    </Logger>
+
+    <Logger name="org.options" level="debug" additivity="false">
+      <AppenderRef ref="file"/>
+    </Logger>
+
+    <Root level="info">
+      <AppenderRef ref="STDOUT"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

@@ -44,3 +44,7 @@ Temporary Items
 
 option_data
 __pycache__
+options/.idea
+options/data
+options/logs
+
