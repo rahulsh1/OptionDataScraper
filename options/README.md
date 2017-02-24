@@ -2,7 +2,7 @@
 
 Fetches options data from Yahoo
 
-[![Build Status](https://travis-ci.org/rahulsh1/zoocurator.svg?branch=master)](https://travis-ci.org/rahulsh1/zoocurator)
+[![Build Status](https://travis-ci.org/rahulsh1/OptionDataScraper.svg?branch=master)](https://travis-ci.org/rahulsh1/OptionDataScraper)
 
 ### Pre-requisites
 - JDK 1.8
