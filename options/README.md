@@ -25,9 +25,9 @@ Add stock quotes to a file separated by new line.
     
 ### Run
 
-    $ java -jar ./target/optionsdata-1.0-with-dependencies.jar $PWD/stock_list.txt $PWD/data
+    $ java -jar ./target/optionsdata-1.0-with-dependencies.jar $PWD/../stock_list.txt $PWD/data
 
-The results are stored in the data directory
+The results are stored in the `data` directory.
 
 ### Output
   
