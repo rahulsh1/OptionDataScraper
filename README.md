@@ -2,6 +2,8 @@
 
 Scrapes option contract data from Yahoo Finance or Google Finance
 
+[![Build Status](https://travis-ci.org/rahulsh1/OptionDataScraper.svg?branch=master)](https://travis-ci.org/rahulsh1/OptionDataScraper)
+
 ##### Prerequisites
 1. Python 3.x
 
