@@ -47,4 +47,6 @@ __pycache__
 options/.idea
 options/data
 options/logs
+sorted_option_data
+options_
 
