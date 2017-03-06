@@ -109,7 +109,7 @@ final class YahooFetcher {
    * @param jsonData output converted to json object
    * @return List of expiry dates
    */
-  private List<Integer> fetchExpiryDates(final JSONObject jsonData) {
+  List<Integer> fetchExpiryDates(final JSONObject jsonData) {
     final List<Integer> integerList = new ArrayList<>();
     final JSONArray expiryDates = jsonData.getJSONObject("optionChain").getJSONArray("result")
         .getJSONObject(0).getJSONArray("expirationDates");
@@ -124,7 +124,7 @@ final class YahooFetcher {
    * @param jsonData json result object
    * @return date
    */
-  private String getMarketDay(final JSONObject jsonData) {
+  String getMarketDay(final JSONObject jsonData) {
     final Integer mktTime = (Integer) jsonData.getJSONObject("optionChain").getJSONArray("result")
       .getJSONObject(0).getJSONObject("quote").get("regularMarketTime");
     return OptionsData.utcToDate(mktTime);
@@ -136,7 +136,7 @@ final class YahooFetcher {
    * @param optionType call/put
    * @return data for each of the expiry date
    */
-  private List<String> fetchOptionPrices(final JSONObject json, final String optionType) {
+  List<String> fetchOptionPrices(final JSONObject json, final String optionType) {
     final List<String> recordList = new ArrayList<>();
     final JSONArray optionObjects = json.getJSONObject("optionChain").getJSONArray("result")
       .getJSONObject(0).getJSONArray("options").getJSONObject(0).getJSONArray(optionType);

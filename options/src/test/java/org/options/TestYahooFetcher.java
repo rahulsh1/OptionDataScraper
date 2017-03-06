@@ -49,7 +49,7 @@ public class TestYahooFetcher {
     String json = loadJsonFile("src/test/resources/json/1485475200.json");
     YahooFetcher yahooFetcher = new YahooFetcher(null);
     JSONObject jsonObj = toJsonObject(json);
-    final List<String> callPrices = yahooFetcher.fetchOptionPrices("calls", jsonObj);
+    final List<String> callPrices = yahooFetcher.fetchOptionPrices(jsonObj, "calls");
 
     assertEquals("List not match", "75.0,44.92,43.2,46.75,0,2,1.6875015625", callPrices.get(0));
     assertEquals("List not match", "135.0,0.01,0.0,0.0,0,30,0.2500075", callPrices.get(callPrices.size()-1));
@@ -62,7 +62,7 @@ public class TestYahooFetcher {
     String json = loadJsonFile("src/test/resources/json/1485475200.json");
     YahooFetcher yahooFetcher = new YahooFetcher(null);
     JSONObject jsonObj = toJsonObject(json);
-    final List<String> putPrices = yahooFetcher.fetchOptionPrices("puts", jsonObj);
+    final List<String> putPrices = yahooFetcher.fetchOptionPrices(jsonObj, "puts");
 
     assertEquals("List not match", "98.5,0.01,0.0,0.01,491,2,0.7656273437500001", putPrices.get(0));
     assertEquals("List not match", "133.0,13.4,11.3,14.6,1,1,1.302249582519531", putPrices.get(putPrices.size()-1));
@@ -70,26 +70,27 @@ public class TestYahooFetcher {
 
   @Test
   public void testUtcDates() {
-    assertEquals("Dates mismatch", "2017-02-10", YahooFetcher.utcToDate(1486684800));
-    assertEquals("Dates mismatch", "2017-01-27", YahooFetcher.utcToDate(1485475200));
-    assertEquals("Dates mismatch", "2019-01-18", YahooFetcher.utcToDate(1547769600));
+    assertEquals("Dates mismatch", "2017-02-10", OptionsData.utcToDate(1486684800));
+    assertEquals("Dates mismatch", "2017-01-27", OptionsData.utcToDate(1485475200));
+    assertEquals("Dates mismatch", "2019-01-18", OptionsData.utcToDate(1547769600));
   }
 
   @Test
   public void testFilePath() {
     Path base = Paths.get("/test/options");
-    final Path p = YahooFetcher.getFilePath(base, "calls", "AAPL", "2017-02-10", "2017-02-27");
+    final Path p = OptionsData.getFilePath(base, "calls", "AAPL", "2017-02-10", "2017-02-27");
     assertEquals("Path mismatch", Paths.get(base.toString(), "2017-02-27/2017-02-10/AAPL_calls.csv"), p);
-    final Path p1 = YahooFetcher.getFilePath(base, "puts", "AAPL", "2017-02-10", "2017-02-27");
+    final Path p1 = OptionsData.getFilePath(base, "puts", "AAPL", "2017-02-10", "2017-02-27");
     assertEquals("Path mismatch", Paths.get(base.toString(), "2017-02-27/2017-02-10/AAPL_puts.csv"), p1);
   }
 
   @Test
   public void testOptionWrite() {
     String json = loadJsonFile("src/test/resources/json/1485475200.json");
-    YahooFetcher yahooFetcher = new YahooFetcher(Paths.get("data"));
+    final Path p = OptionsData.getFilePath(Paths.get("data"), "calls", "AAPL", "2017-02-10", "2017-02-27");
     JSONObject jsonObj = toJsonObject(json);
-    yahooFetcher.writeOptionsFile(jsonObj, "AAPL", 1485475200, "calls");
+//    OptionsData.writeOptionsFile(jsonObj, "AAPL", 1485475200, "calls");
+    // TODO
   }
 
   private String loadJsonFile(String file) {
