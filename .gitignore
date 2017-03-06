@@ -49,4 +49,6 @@ options/data
 options/logs
 sorted_option_data
 options_
+*.iml
+options/src/main/php/output
 
