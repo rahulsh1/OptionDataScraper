@@ -4,6 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
@@ -11,7 +12,12 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -52,6 +58,48 @@ public final class OptionsData {
       LOGGER.warn(e);
     }
     return buffer;
+  }
+
+  /**
+   * Get path to the destination file
+   * @param basePath root dir
+   * @param optionType call/put
+   * @param quote quote
+   * @param currentDay day when record was fetched
+   * @param expiryDate exp date of option
+   * @return path to option file
+   */
+  static Path getFilePath(Path basePath, String optionType, String quote, String currentDay, String expiryDate) {
+    final String deltaPath =
+      String.format("%s%s%s%s%s_%s.csv", expiryDate, File.separator, currentDay, File.separator, quote, optionType);
+    return basePath.resolve(deltaPath);
+  }
+
+  /**
+   * Convert UTC to yyyy-mm-dd form.
+   * @param utc UTC time
+   * @return day in form yyyy-mm-dd
+   */
+  static String utcToDate(int utc) {
+    return LocalDateTime.ofEpochSecond(utc, 0, ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE);
+  }
+
+  /**
+   * Write to options file.
+   *
+   * @param optionData result data
+   * @param optionPath path to write to
+   */
+  static void writeOptionsFile(List<String> optionData, Path optionPath) {
+    try {
+      final Path parent = optionPath.getParent();
+      if (parent != null) {
+        Files.createDirectories(parent);
+      }
+      Files.write(optionPath, optionData, Charset.defaultCharset(), StandardOpenOption.CREATE);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
   }
 
   public static void main(String[] args) throws IOException {

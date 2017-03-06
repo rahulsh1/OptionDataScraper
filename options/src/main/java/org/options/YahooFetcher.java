@@ -17,6 +17,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * Class to fetch options data from Yahoo.
@@ -32,6 +33,7 @@ final class YahooFetcher {
 
   private static final Logger LOGGER = LogManager.getLogger(YahooFetcher.class);
   private final Path outputDirectory;
+  private final Random random;
 
   /**
    * Constructor with output dir.
@@ -39,6 +41,7 @@ final class YahooFetcher {
    */
   YahooFetcher(Path destPath) {
     outputDirectory = destPath;
+    random = new Random();
   }
 
   /**
@@ -49,7 +52,7 @@ final class YahooFetcher {
    *
    * @param quote stock quote
    */
-  void fetchData(final String quote) {
+  public void fetchData(final String quote) {
     final String url = String.format(MAIN_URL, quote);
     final StringBuffer buffer = OptionsData.fetchJsonData(url);
     if (buffer != null) {
@@ -59,7 +62,10 @@ final class YahooFetcher {
 
       for (final Integer expDate : expDates) {
         // Check if data already downloaded - option file exists
-        final Path optionFilePath = getFilePath(outputDirectory, CALLS, quote, getMarketDay(rootJson), utcToDate(expDate));
+        final String expDateStr = OptionsData.utcToDate(expDate);
+        final String currDay = getMarketDay(rootJson);
+
+        final Path optionFilePath = OptionsData.getFilePath(outputDirectory, CALLS, quote, currDay, expDateStr);
         if (optionFilePath.toFile().exists()) {
           continue;
         }
@@ -74,16 +80,23 @@ final class YahooFetcher {
             LOGGER.warn("Got invalid results from Site. Probably they changed the API output: {} {}", quote, jsonData);
             break;
           }
-          // Write Call records
-          writeOptionsFile(json, quote, expDate, CALLS);
-          // Write Put records
-          writeOptionsFile(json, quote, expDate, PUTS);
-          LOGGER.debug("Downloaded data for {} for {}", quote, utcToDate(expDate));
+
+          // Fetch the Call data
+          final List<String> callData = fetchOptionPrices(json, CALLS);
+          final Path callPath = OptionsData.getFilePath(outputDirectory, CALLS, quote, currDay, expDateStr);
+          OptionsData.writeOptionsFile(callData, callPath);
+
+          // Fetch the Put data
+          final List<String> putData = fetchOptionPrices(json, PUTS);
+          final Path putPath = OptionsData.getFilePath(outputDirectory, PUTS, quote, currDay, expDateStr);
+          OptionsData.writeOptionsFile(putData, putPath);
+
+          LOGGER.debug("Downloaded data for {} for {}", quote, OptionsData.utcToDate(expDate));
         }
 
         // Be nice and dont overload the server.
         try {
-          Thread.sleep(2000);
+          Thread.sleep(random.nextInt(3000) + 2000);
         } catch (InterruptedException e) {
           LOGGER.debug("Thread interrupted !!");
         }
@@ -96,7 +109,7 @@ final class YahooFetcher {
    * @param jsonData output converted to json object
    * @return List of expiry dates
    */
-  List<Integer> fetchExpiryDates(final JSONObject jsonData) {
+  private List<Integer> fetchExpiryDates(final JSONObject jsonData) {
     final List<Integer> integerList = new ArrayList<>();
     final JSONArray expiryDates = jsonData.getJSONObject("optionChain").getJSONArray("result")
         .getJSONObject(0).getJSONArray("expirationDates");
@@ -111,84 +124,39 @@ final class YahooFetcher {
    * @param jsonData json result object
    * @return date
    */
-  String getMarketDay(final JSONObject jsonData) {
+  private String getMarketDay(final JSONObject jsonData) {
     final Integer mktTime = (Integer) jsonData.getJSONObject("optionChain").getJSONArray("result")
       .getJSONObject(0).getJSONObject("quote").get("regularMarketTime");
-    return utcToDate(mktTime);
+    return OptionsData.utcToDate(mktTime);
   }
 
   /**
    * Fetch the option prices.
-   * @param optionType call/put
    * @param json  json result object
+   * @param optionType call/put
    * @return data for each of the expiry date
    */
-  List<String> fetchOptionPrices(final String optionType, final JSONObject json) {
+  private List<String> fetchOptionPrices(final JSONObject json, final String optionType) {
     final List<String> recordList = new ArrayList<>();
-    final JSONArray callObjects = json.getJSONObject("optionChain").getJSONArray("result")
+    final JSONArray optionObjects = json.getJSONObject("optionChain").getJSONArray("result")
       .getJSONObject(0).getJSONArray("options").getJSONObject(0).getJSONArray(optionType);
 
     final StringBuilder buffer = new StringBuilder();
-    for (int i = 0; i < callObjects.length(); i++) {
-      final JSONObject callPriceObj = callObjects.getJSONObject(i);
+    for (int i = 0; i < optionObjects.length(); i++) {
+      final JSONObject optionPriceObj = optionObjects.getJSONObject(i);
 
       // Price,Last,Bid,Ask,Open Int,Volume,IV
-      buffer.append(callPriceObj.getJSONObject("strike").get("raw")).append(',');
-      buffer.append(callPriceObj.getJSONObject("lastPrice").get("raw")).append(',');
-      buffer.append(callPriceObj.getJSONObject("bid").get("raw")).append(',');
-      buffer.append(callPriceObj.getJSONObject("ask").get("raw")).append(',');
-      buffer.append(callPriceObj.getJSONObject("openInterest").get("raw")).append(',');
-      buffer.append(callPriceObj.getJSONObject("volume").get("raw")).append(',');
-      buffer.append(callPriceObj.getJSONObject("impliedVolatility").get("raw"));
+      buffer.append(optionPriceObj.getJSONObject("strike").get("raw")).append(',');
+      buffer.append(optionPriceObj.getJSONObject("lastPrice").get("raw")).append(',');
+      buffer.append(optionPriceObj.getJSONObject("bid").get("raw")).append(',');
+      buffer.append(optionPriceObj.getJSONObject("ask").get("raw")).append(',');
+      buffer.append(optionPriceObj.getJSONObject("openInterest").get("raw")).append(',');
+      buffer.append(optionPriceObj.getJSONObject("volume").get("raw")).append(',');
+      buffer.append(optionPriceObj.getJSONObject("impliedVolatility").get("raw"));
       recordList.add(buffer.toString());
       buffer.delete(0, buffer.length());
     }
     return recordList;
   }
 
-  /**
-   * Get path to the destination file
-   * @param basePath root dir
-   * @param optionType call/put
-   * @param quote quote
-   * @param currentDay day when record was fetched
-   * @param expiryDate exp date of option
-   * @return path to option file
-   */
-  static Path getFilePath(Path basePath, String optionType, String quote, String currentDay, String expiryDate) {
-    final String deltaPath =
-      String.format("%s%s%s%s%s_%s.csv", expiryDate, File.separator, currentDay, File.separator, quote, optionType);
-    return basePath.resolve(deltaPath);
-  }
-
-  /**
-   * Convert UTC to yyyy-mm-dd form.
-   * @param utc UTC time
-   * @return day in form yyyy-mm-dd
-   */
-  static String utcToDate(int utc) {
-    return LocalDateTime.ofEpochSecond(utc, 0, ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE);
-  }
-
-  /**
-   * Write to options file.
-   * @param json result json object
-   * @param quote stock quote
-   * @param expDate expiry date
-   * @param optionType call/put
-   */
-  void writeOptionsFile(final JSONObject json, final String quote, final Integer expDate, final String optionType) {
-    final String currDay = getMarketDay(json);
-    final List<String> optionData = fetchOptionPrices(optionType, json);
-    final Path optionPath = getFilePath(outputDirectory, optionType, quote, currDay, utcToDate(expDate));
-    try {
-      final Path parent = optionPath.getParent();
-      if (parent != null) {
-        Files.createDirectories(parent);
-      }
-      Files.write(optionPath, optionData, Charset.defaultCharset(), StandardOpenOption.CREATE);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-  }
 }
